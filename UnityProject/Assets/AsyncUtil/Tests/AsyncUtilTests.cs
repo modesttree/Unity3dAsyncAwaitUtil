@@ -76,12 +76,7 @@ public class AsyncUtilTests : MonoBehaviour
             RunIEnumeratorTryCatchExceptionAsync().WrapErrors();
         }
 
-        if (_buttonHandler.Display("Load assetbundle with StartCoroutine"))
-        {
-            StartCoroutine(RunAsyncOperation2());
-        }
-
-        if (_buttonHandler.Display("Load assetbundle with async await"))
+        if (_buttonHandler.Display("Load assetbundle"))
         {
             RunAsyncOperationAsync().WrapErrors();
         }
@@ -106,11 +101,6 @@ public class AsyncUtilTests : MonoBehaviour
             RunWwwAsync().WrapErrors();
         }
 
-        if (_buttonHandler.Display("Test www download coroutines"))
-        {
-            StartCoroutine(RunWww());
-        }
-
         if (_buttonHandler.Display("Test Call Async from coroutine"))
         {
             StartCoroutine(RunAsyncFromCoroutineTest());
@@ -129,13 +119,6 @@ public class AsyncUtilTests : MonoBehaviour
     async Task RunAsyncFromCoroutineTest2()
     {
         await new WaitForSeconds(1.0f);
-    }
-
-    IEnumerator RunWww()
-    {
-        var www = new WWW(AssetBundleSampleUrl);
-        yield return www;
-        Debug.Log("Downloaded " + (www.bytes.Length / 1024) + " kb");
     }
 
     async Task RunWwwAsync()
@@ -159,50 +142,26 @@ public class AsyncUtilTests : MonoBehaviour
 
     async Task RunTryCatchExceptionTestAsync()
     {
-        var test = NestedRunAsync();
         try
         {
-            await test;
+            await NestedRunAsync();
         }
         catch (Exception e)
         {
-            Debug.Log("Caught expected exception: " + e.Message);
+            Debug.Log("Caught exception! " + e.Message);
         }
     }
 
     async Task NestedRunAsync()
     {
         await new WaitForSeconds(1);
-        throw new Exception();
+        throw new Exception("foo");
     }
 
     async Task WaitThenThrowException()
     {
         await new WaitForSeconds(1.5f);
         throw new Exception("asdf");
-    }
-
-    IEnumerator RunAsyncOperation2()
-    {
-        yield return InstantiateAssetBundle(
-            AssetBundleSampleUrl, AssetBundleSampleAssetName);
-    }
-
-    IEnumerator InstantiateAssetBundle(string url, string assetName)
-    {
-        var request = UnityWebRequest.Get(url);
-        yield return request.Send();
-
-        var abLoader = AssetBundle.LoadFromMemoryAsync(request.downloadHandler.data);
-        yield return abLoader;
-        var assetbundle = abLoader.assetBundle;
-
-        var prefabLoader = assetbundle.LoadAssetAsync<GameObject>(assetName);
-        yield return prefabLoader;
-        var prefab = prefabLoader.asset as GameObject;
-
-        GameObject.Instantiate(prefab);
-        assetbundle.Unload(false);
     }
 
     async Task RunAsyncOperationAsync()
@@ -212,6 +171,8 @@ public class AsyncUtilTests : MonoBehaviour
 
     async Task InstantiateAssetBundleAsync(string abUrl, string assetName)
     {
+        // We could use WWW here too which might be easier
+        Debug.Log("Downloading asset bundle data...");
         var assetBundle = await AssetBundle.LoadFromMemoryAsync(
             await DownloadRawDataAsync(abUrl));
 
@@ -219,17 +180,7 @@ public class AsyncUtilTests : MonoBehaviour
 
         GameObject.Instantiate(prefab);
         assetBundle.Unload(false);
-    }
-
-    async Task InstantiateAssetBundleAsync2(string abUrl, string assetName)
-    {
-        var assetBundle = await AssetBundle.LoadFromMemoryAsync(
-            await DownloadRawDataAsync(abUrl));
-
-        var prefab = (GameObject)(await assetBundle.LoadAssetAsync<GameObject>(assetName));
-
-        GameObject.Instantiate(prefab);
-        assetBundle.Unload(false);
+        Debug.Log("Asset bundle instantiated");
     }
 
     async Task<byte[]> DownloadRawDataAsync(string url)
@@ -247,7 +198,7 @@ public class AsyncUtilTests : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.Log("Caught exception! {0}" + e);
+            Debug.Log("Caught exception! " + e.Message);
         }
     }
 
@@ -263,8 +214,8 @@ public class AsyncUtilTests : MonoBehaviour
 
     IEnumerator WaitThenThrowNested()
     {
-        Debug.Log("Waiting 2 seconds...");
-        yield return new WaitForSeconds(2.0f);
+        Debug.Log("Waiting 1 second...");
+        yield return new WaitForSeconds(1.0f);
         throw new Exception("zxcv");
     }
 
