@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityAsyncAwaitUtil;
@@ -11,158 +12,230 @@ using UnityAsyncAwaitUtil;
 // that make the most sense for the specific instruction type
 public static class IEnumeratorAwaitExtensions
 {
-    public static TaskAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation instruction)
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitForSeconds instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitForUpdate instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitForEndOfFrame instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitForFixedUpdate instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitForSecondsRealtime instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitUntil instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter GetAwaiter(this WaitWhile instruction)
+    {
+        return GetAwaiterReturnVoid(instruction);
+    }
+
+    public static SimpleCoroutineAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation instruction)
     {
         return GetAwaiterReturnSelf(instruction);
     }
 
-    public static TaskAwaiter<object> GetAwaiter(this WaitForSeconds instruction)
+    public static SimpleCoroutineAwaiter<UnityEngine.Object> GetAwaiter(this ResourceRequest instruction)
     {
-        return GetAwaiterReturnNull(instruction);
+        var awaiter = new SimpleCoroutineAwaiter<UnityEngine.Object>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            InstructionWrappers.ResourceRequest(awaiter, instruction)));
+        return awaiter;
     }
 
-    public static TaskAwaiter<object> GetAwaiter(this WaitForUpdate instruction)
-    {
-        return GetAwaiterReturnNull(instruction);
-    }
-
-    public static TaskAwaiter<object> GetAwaiter(this WaitForEndOfFrame instruction)
-    {
-        return GetAwaiterReturnNull(instruction);
-    }
-
-    public static TaskAwaiter<object> GetAwaiter(this WaitForFixedUpdate instruction)
-    {
-        return GetAwaiterReturnNull(instruction);
-    }
-
-    public static TaskAwaiter<object> GetAwaiter(this WaitForSecondsRealtime instruction)
-    {
-        return GetAwaiterReturnNull(instruction);
-    }
-
-    public static TaskAwaiter<object> GetAwaiter(this WaitUntil instruction)
-    {
-        return GetAwaiterReturnNull(instruction);
-    }
-
-    public static TaskAwaiter<object> GetAwaiter(this WaitWhile instruction)
-    {
-        return GetAwaiterReturnNull(instruction);
-    }
-
-    public static TaskAwaiter<UnityEngine.Object> GetAwaiter(this ResourceRequest instruction)
-    {
-        var tcs = new TaskCompletionSource<UnityEngine.Object>();
-        AsyncCoroutineRunner.Instance.StartCoroutine(
-            InstructionWrappers.ResourceRequest(tcs, instruction));
-        return tcs.Task.GetAwaiter();
-    }
-
-    public static TaskAwaiter<UnityEngine.iOS.OnDemandResourcesRequest> GetAwaiter(this UnityEngine.iOS.OnDemandResourcesRequest instruction)
+    public static SimpleCoroutineAwaiter<UnityEngine.iOS.OnDemandResourcesRequest> GetAwaiter(this UnityEngine.iOS.OnDemandResourcesRequest instruction)
     {
         return GetAwaiterReturnSelf(instruction);
     }
 
     // Return itself so you can do things like (await new WWW(url)).bytes
-    public static TaskAwaiter<WWW> GetAwaiter(this WWW instruction)
+    public static SimpleCoroutineAwaiter<WWW> GetAwaiter(this WWW instruction)
     {
         return GetAwaiterReturnSelf(instruction);
     }
 
-    public static TaskAwaiter<AssetBundle> GetAwaiter(this AssetBundleCreateRequest instruction)
+    public static SimpleCoroutineAwaiter<AssetBundle> GetAwaiter(this AssetBundleCreateRequest instruction)
     {
-        var tcs = new TaskCompletionSource<AssetBundle>();
-        AsyncCoroutineRunner.Instance.StartCoroutine(
-            InstructionWrappers.AssetBundleCreateRequest(tcs, instruction));
-        return tcs.Task.GetAwaiter();
+        var awaiter = new SimpleCoroutineAwaiter<AssetBundle>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            InstructionWrappers.AssetBundleCreateRequest(awaiter, instruction)));
+        return awaiter;
     }
 
-    public static TaskAwaiter<UnityEngine.Object> GetAwaiter(this AssetBundleRequest instruction)
+    public static SimpleCoroutineAwaiter<UnityEngine.Object> GetAwaiter(this AssetBundleRequest instruction)
     {
-        var tcs = new TaskCompletionSource<UnityEngine.Object>();
-        AsyncCoroutineRunner.Instance.StartCoroutine(
-            InstructionWrappers.AssetBundleRequest(tcs, instruction));
-        return tcs.Task.GetAwaiter();
+        var awaiter = new SimpleCoroutineAwaiter<UnityEngine.Object>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            InstructionWrappers.AssetBundleRequest(awaiter, instruction)));
+        return awaiter;
     }
 
-    public static TaskAwaiter<object> GetAwaiter(this IEnumerator coroutine)
+    public static SimpleCoroutineAwaiter<object> GetAwaiter(this IEnumerator coroutine)
     {
-        var tcs = new TaskCompletionSource<object>();
-        var wrapper = new CoroutineWrapper(coroutine, tcs);
-        AsyncCoroutineRunner.Instance.StartCoroutine(wrapper.Run());
-        return tcs.Task.GetAwaiter();
+        var awaiter = new SimpleCoroutineAwaiter<object>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            new CoroutineWrapper(coroutine, awaiter).Run()));
+        return awaiter;
     }
 
-    // We'd prefer to return TaskAwaiter here instead since there is never a return
-    // value for yield instructions, but I'm not sure how to get that working here
-    // since TaskAwaiter<> does not inherit from TaskAwaiter and there isn't a
-    // non generic version of TaskCompletionSource<>
-    static TaskAwaiter<object> GetAwaiterReturnNull(object instruction)
+    static SimpleCoroutineAwaiter GetAwaiterReturnVoid(object instruction)
     {
-        var tcs = new TaskCompletionSource<object>();
-        AsyncCoroutineRunner.Instance.StartCoroutine(
-            InstructionWrappers.ReturnNullValue(tcs, instruction));
-        return tcs.Task.GetAwaiter();
+        var awaiter = new SimpleCoroutineAwaiter();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            InstructionWrappers.ReturnVoid(awaiter, instruction)));
+        return awaiter;
     }
 
-    static TaskAwaiter<T> GetAwaiterReturnSelf<T>(T instruction)
+    static SimpleCoroutineAwaiter<T> GetAwaiterReturnSelf<T>(T instruction)
     {
-        var tcs = new TaskCompletionSource<T>();
-        AsyncCoroutineRunner.Instance.StartCoroutine(
-            InstructionWrappers.ReturnSelf(tcs, instruction));
-        return tcs.Task.GetAwaiter();
+        var awaiter = new SimpleCoroutineAwaiter<T>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            InstructionWrappers.ReturnSelf(awaiter, instruction)));
+        return awaiter;
     }
 
-    static class InstructionWrappers
+    static void RunOnUnityScheduler(Action action)
     {
-        public static IEnumerator ReturnNullValue(
-            TaskCompletionSource<object> tcs, object instruction)
+        if (SynchronizationContext.Current == SyncContextUtil.UnitySynchronizationContext)
         {
-            yield return instruction;
-            tcs.SetResult(null);
+            action();
+        }
+        else
+        {
+            SyncContextUtil.UnitySynchronizationContext.Post(_ => action(), null);
+        }
+    }
+
+    static void Assert(bool condition)
+    {
+        if (!condition)
+        {
+            throw new Exception("Assert hit in UnityAsyncUtil package!");
+        }
+    }
+
+    public class SimpleCoroutineAwaiter<T> : INotifyCompletion
+    {
+        bool _isDone;
+        Exception _exception;
+        Action _continuation;
+        T _result;
+
+        public bool IsCompleted
+        {
+            get { return _isDone; }
         }
 
-        public static IEnumerator AssetBundleCreateRequest(
-            TaskCompletionSource<AssetBundle> tcs, AssetBundleCreateRequest instruction)
+        public T GetResult()
         {
-            yield return instruction;
-            tcs.SetResult(instruction.assetBundle);
+            Assert(_isDone);
+
+            if (_exception != null)
+            {
+                throw _exception;
+            }
+
+            return _result;
         }
 
-        public static IEnumerator AssetBundleRequest(
-            TaskCompletionSource<UnityEngine.Object> tcs, AssetBundleRequest instruction)
+        public void Complete(T result, Exception e)
         {
-            yield return instruction;
-            tcs.SetResult(instruction.asset);
+            Assert(!_isDone);
+
+            _isDone = true;
+            _exception = e;
+            _result = result;
+
+            // Always trigger the continuation on the unity thread when awaiting on unity yield
+            // instructions
+            if (_continuation != null)
+            {
+                RunOnUnityScheduler(_continuation);
+            }
         }
 
-        public static IEnumerator ResourceRequest(
-            TaskCompletionSource<UnityEngine.Object> tcs, ResourceRequest instruction)
+        void INotifyCompletion.OnCompleted(Action continuation)
         {
-            yield return instruction;
-            tcs.SetResult(instruction.asset);
+            Assert(_continuation == null);
+            Assert(!_isDone);
+
+            _continuation = continuation;
+        }
+    }
+
+    public class SimpleCoroutineAwaiter : INotifyCompletion
+    {
+        bool _isDone;
+        Exception _exception;
+        Action _continuation;
+
+        public bool IsCompleted
+        {
+            get { return _isDone; }
         }
 
-        public static IEnumerator ReturnSelf<T>(
-            TaskCompletionSource<T> tcs, T instruction)
+        public void GetResult()
         {
-            yield return instruction;
-            tcs.SetResult(instruction);
+            Assert(_isDone);
+
+            if (_exception != null)
+            {
+                throw _exception;
+            }
+        }
+
+        public void Complete(Exception e)
+        {
+            Assert(!_isDone);
+
+            _isDone = true;
+            _exception = e;
+
+            // Always trigger the continuation on the unity thread when awaiting on unity yield
+            // instructions
+            if (_continuation != null)
+            {
+                RunOnUnityScheduler(_continuation);
+            }
+        }
+
+        void INotifyCompletion.OnCompleted(Action continuation)
+        {
+            Assert(_continuation == null);
+            Assert(!_isDone);
+
+            _continuation = continuation;
         }
     }
 
     class CoroutineWrapper
     {
-        readonly TaskCompletionSource<object> _tcs;
+        readonly SimpleCoroutineAwaiter<object> _awaiter;
         readonly Stack<IEnumerator> _processStack;
 
         public CoroutineWrapper(
-            IEnumerator coroutine, TaskCompletionSource<object> tcs)
+            IEnumerator coroutine, SimpleCoroutineAwaiter<object> awaiter)
         {
             _processStack = new Stack<IEnumerator>();
             _processStack.Push(coroutine);
-            _tcs = tcs;
+            _awaiter = awaiter;
         }
 
         public IEnumerator Run()
@@ -179,7 +252,7 @@ public static class IEnumeratorAwaitExtensions
                 }
                 catch (Exception e)
                 {
-                    _tcs.SetException(e);
+                    _awaiter.Complete(null, e);
                     yield break;
                 }
 
@@ -189,7 +262,7 @@ public static class IEnumeratorAwaitExtensions
 
                     if (_processStack.Count == 0)
                     {
-                        _tcs.SetResult(topWorker.Current);
+                        _awaiter.Complete(topWorker.Current, null);
                         yield break;
                     }
                 }
@@ -208,6 +281,45 @@ public static class IEnumeratorAwaitExtensions
                     yield return topWorker.Current;
                 }
             }
+        }
+    }
+
+    static class InstructionWrappers
+    {
+        public static IEnumerator ReturnVoid(
+            SimpleCoroutineAwaiter awaiter, object instruction)
+        {
+            // For simple instructions we assume that they don't throw exceptions
+            yield return instruction;
+            awaiter.Complete(null);
+        }
+
+        public static IEnumerator AssetBundleCreateRequest(
+            SimpleCoroutineAwaiter<AssetBundle> awaiter, AssetBundleCreateRequest instruction)
+        {
+            yield return instruction;
+            awaiter.Complete(instruction.assetBundle, null);
+        }
+
+        public static IEnumerator ReturnSelf<T>(
+            SimpleCoroutineAwaiter<T> awaiter, T instruction)
+        {
+            yield return instruction;
+            awaiter.Complete(instruction, null);
+        }
+
+        public static IEnumerator AssetBundleRequest(
+            SimpleCoroutineAwaiter<UnityEngine.Object> awaiter, AssetBundleRequest instruction)
+        {
+            yield return instruction;
+            awaiter.Complete(instruction.asset, null);
+        }
+
+        public static IEnumerator ResourceRequest(
+            SimpleCoroutineAwaiter<UnityEngine.Object> awaiter, ResourceRequest instruction)
+        {
+            yield return instruction;
+            awaiter.Complete(instruction.asset, null);
         }
     }
 }

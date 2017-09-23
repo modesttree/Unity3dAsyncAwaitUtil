@@ -125,17 +125,31 @@ namespace UnityAsyncAwaitUtil
 
         async Task RunMultipleThreadsTestAsync()
         {
-            PrintCurrentThreadContext("Before ConfigureAwait(false)");
-            await RunAwaitSecondsTestAsync().ConfigureAwait(false);
-            PrintCurrentThreadContext("After ConfigureAwait(false)");
+            PrintCurrentThreadContext("Start");
+            await Task.Delay(TimeSpan.FromSeconds(1.0f));
+            PrintCurrentThreadContext("After delay");
+            await new WaitForBackgroundThread();
+            PrintCurrentThreadContext("After WaitForBackgroundThread");
+            Debug.Log("Waiting 1 second...");
+            await Task.Delay(TimeSpan.FromSeconds(1.0f));
+            // We will still running from the threadpool after the delay here
+            PrintCurrentThreadContext("After Waiting");
+            // We can place any unity yield instruction here instead and it will return to the unity thread
             await new WaitForUpdate();
             PrintCurrentThreadContext("After WaitForUpdate");
         }
 
-        void PrintCurrentThreadContext(string prefix)
+        async Task RunMultipleThreadsTestAsyncWait()
         {
-            Debug.Log(string.Format("{0}: Current Thread: {1}, Scheduler: {2}",
-                prefix, Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current == null ? "null" : SynchronizationContext.Current.GetType().Name));
+            PrintCurrentThreadContext("RunMultipleThreadsTestAsyncWait1");
+            await new WaitForSeconds(1.0f);
+            PrintCurrentThreadContext("RunMultipleThreadsTestAsyncWait2");
+        }
+
+        void PrintCurrentThreadContext(string prefix = null)
+        {
+            Debug.Log(string.Format("{0}Current Thread: {1}, Scheduler: {2}",
+                prefix == null ? "" : prefix + ": ", Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current == null ? "null" : SynchronizationContext.Current.GetType().Name));
         }
 
         async Task RunAsyncFromCoroutineTest2()
@@ -145,6 +159,7 @@ namespace UnityAsyncAwaitUtil
 
         async Task RunWwwAsync()
         {
+            Debug.Log("Downloading asset bundle using WWW");
             var bytes = (await new WWW(AssetBundleSampleUrl)).bytes;
             Debug.Log("Downloaded " + (bytes.Length / 1024) + " kb");
         }
