@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using UniRx;
 using UnityEngine;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
@@ -15,8 +14,6 @@ namespace UnityAsyncAwaitUtil
     {
         const string AssetBundleSampleUrl = "http://www.stevevermeulen.com/wp-content/uploads/2017/09/teapot.unity3d";
         const string AssetBundleSampleAssetName = "Teapot";
-
-        Subject<string> _signal = new Subject<string>();
 
         [SerializeField]
         TestButtonHandler.Settings _buttonSettings = null;
@@ -81,16 +78,6 @@ namespace UnityAsyncAwaitUtil
             if (_buttonHandler.Display("Load assetbundle"))
             {
                 RunAsyncOperationAsync().WrapErrors();
-            }
-
-            if (_buttonHandler.Display("Test UniRx observable"))
-            {
-                RunUniRxTestAsync().WrapErrors();
-            }
-
-            if (_buttonHandler.Display("Trigger UniRx observable"))
-            {
-                _signal.OnNext("zcvd");
             }
 
             if (_buttonHandler.Display("Test opening notepad"))
@@ -295,13 +282,6 @@ namespace UnityAsyncAwaitUtil
         IEnumerator WaitABit()
         {
             yield return new WaitForSeconds(1.5f);
-        }
-
-        async Task RunUniRxTestAsync()
-        {
-            Debug.Log("Waiting for UniRx trigger...");
-            var result = await _signal;
-            Debug.Log("Received UniRx trigger with value: " + result);
         }
 
         async Task RunReturnValueTestAsync()
