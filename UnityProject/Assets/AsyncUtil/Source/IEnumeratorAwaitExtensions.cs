@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityAsyncAwaitUtil;
 
 // We could just add a generic GetAwaiter to YieldInstruction and CustomYieldInstruction
 // but instead we add specific methods to each derived class to allow for return values
@@ -16,6 +17,11 @@ public static class IEnumeratorAwaitExtensions
     }
 
     public static TaskAwaiter<object> GetAwaiter(this WaitForSeconds instruction)
+    {
+        return GetAwaiterReturnNull(instruction);
+    }
+
+    public static TaskAwaiter<object> GetAwaiter(this WaitForUpdate instruction)
     {
         return GetAwaiterReturnNull(instruction);
     }
@@ -48,7 +54,7 @@ public static class IEnumeratorAwaitExtensions
     public static TaskAwaiter<UnityEngine.Object> GetAwaiter(this ResourceRequest instruction)
     {
         var tcs = new TaskCompletionSource<UnityEngine.Object>();
-        AsyncMonoBehaviourEvents.Instance.StartCoroutine(
+        AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.ResourceRequest(tcs, instruction));
         return tcs.Task.GetAwaiter();
     }
@@ -67,7 +73,7 @@ public static class IEnumeratorAwaitExtensions
     public static TaskAwaiter<AssetBundle> GetAwaiter(this AssetBundleCreateRequest instruction)
     {
         var tcs = new TaskCompletionSource<AssetBundle>();
-        AsyncMonoBehaviourEvents.Instance.StartCoroutine(
+        AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.AssetBundleCreateRequest(tcs, instruction));
         return tcs.Task.GetAwaiter();
     }
@@ -75,7 +81,7 @@ public static class IEnumeratorAwaitExtensions
     public static TaskAwaiter<UnityEngine.Object> GetAwaiter(this AssetBundleRequest instruction)
     {
         var tcs = new TaskCompletionSource<UnityEngine.Object>();
-        AsyncMonoBehaviourEvents.Instance.StartCoroutine(
+        AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.AssetBundleRequest(tcs, instruction));
         return tcs.Task.GetAwaiter();
     }
@@ -84,7 +90,7 @@ public static class IEnumeratorAwaitExtensions
     {
         var tcs = new TaskCompletionSource<object>();
         var wrapper = new CoroutineWrapper(coroutine, tcs);
-        AsyncMonoBehaviourEvents.Instance.StartCoroutine(wrapper.Run());
+        AsyncCoroutineRunner.Instance.StartCoroutine(wrapper.Run());
         return tcs.Task.GetAwaiter();
     }
 
@@ -95,7 +101,7 @@ public static class IEnumeratorAwaitExtensions
     static TaskAwaiter<object> GetAwaiterReturnNull(object instruction)
     {
         var tcs = new TaskCompletionSource<object>();
-        AsyncMonoBehaviourEvents.Instance.StartCoroutine(
+        AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.ReturnNullValue(tcs, instruction));
         return tcs.Task.GetAwaiter();
     }
@@ -103,7 +109,7 @@ public static class IEnumeratorAwaitExtensions
     static TaskAwaiter<T> GetAwaiterReturnSelf<T>(T instruction)
     {
         var tcs = new TaskCompletionSource<T>();
-        AsyncMonoBehaviourEvents.Instance.StartCoroutine(
+        AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.ReturnSelf(tcs, instruction));
         return tcs.Task.GetAwaiter();
     }

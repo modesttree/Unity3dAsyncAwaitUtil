@@ -9,281 +9,304 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
 
-public class AsyncUtilTests : MonoBehaviour
+namespace UnityAsyncAwaitUtil
 {
-    const string AssetBundleSampleUrl = "http://www.stevevermeulen.com/wp-content/uploads/2017/09/teapot.unity3d";
-    const string AssetBundleSampleAssetName = "Teapot";
-
-    Subject<string> _signal = new Subject<string>();
-
-    [SerializeField]
-    TestButtonHandler.Settings _buttonSettings = null;
-
-    TestButtonHandler _buttonHandler;
-
-    public void Awake()
+    public class AsyncUtilTests : MonoBehaviour
     {
-        _buttonHandler = new TestButtonHandler(_buttonSettings);
-    }
+        const string AssetBundleSampleUrl = "http://www.stevevermeulen.com/wp-content/uploads/2017/09/teapot.unity3d";
+        const string AssetBundleSampleAssetName = "Teapot";
 
-    public void OnGUI()
-    {
-        _buttonHandler.Restart();
+        Subject<string> _signal = new Subject<string>();
 
-        if (_buttonHandler.Display("Test await seconds"))
+        [SerializeField]
+        TestButtonHandler.Settings _buttonSettings = null;
+
+        TestButtonHandler _buttonHandler;
+
+        public void Awake()
         {
-            RunAwaitSecondsTestAsync().WrapErrors();
+            _buttonHandler = new TestButtonHandler(_buttonSettings);
         }
 
-        if (_buttonHandler.Display("Test return value"))
+        public void OnGUI()
         {
-            RunReturnValueTestAsync().WrapErrors();
+            _buttonHandler.Restart();
+
+            if (_buttonHandler.Display("Test await seconds"))
+            {
+                RunAwaitSecondsTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test return value"))
+            {
+                RunReturnValueTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test try-catch exception"))
+            {
+                RunTryCatchExceptionTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test unhandled exception"))
+            {
+                // Note: Without WrapErrors here this wouldn't log anything
+                RunUnhandledExceptionTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test IEnumerator"))
+            {
+                RunIEnumeratorTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test IEnumerator with return value (untyped)"))
+            {
+                RunIEnumeratorUntypedStringTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test IEnumerator with return value (typed)"))
+            {
+                RunIEnumeratorStringTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test IEnumerator unhandled exception"))
+            {
+                RunIEnumeratorUnhandledExceptionAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test IEnumerator try-catch exception"))
+            {
+                RunIEnumeratorTryCatchExceptionAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Load assetbundle"))
+            {
+                RunAsyncOperationAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test UniRx observable"))
+            {
+                RunUniRxTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Trigger UniRx observable"))
+            {
+                _signal.OnNext("zcvd");
+            }
+
+            if (_buttonHandler.Display("Test opening notepad"))
+            {
+                RunOpenNotepadTestAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test www download"))
+            {
+                RunWwwAsync().WrapErrors();
+            }
+
+            if (_buttonHandler.Display("Test Call Async from coroutine"))
+            {
+                StartCoroutine(RunAsyncFromCoroutineTest());
+            }
+
+            if (_buttonHandler.Display("Test multiple threads"))
+            {
+                RunMultipleThreadsTestAsync().WrapErrors();
+            }
         }
 
-        if (_buttonHandler.Display("Test try-catch exception"))
+        IEnumerator RunAsyncFromCoroutineTest()
         {
-            RunTryCatchExceptionTestAsync().WrapErrors();
+            Debug.Log("Waiting 1 second...");
+            yield return new WaitForSeconds(1.0f);
+            Debug.Log("Waiting 1 second again...");
+            yield return RunAsyncFromCoroutineTest2().AsIEnumerator();
+            Debug.Log("Done");
         }
 
-        if (_buttonHandler.Display("Test unhandled exception"))
+        async Task RunMultipleThreadsTestAsync()
         {
-            // Note: Without WrapErrors here this wouldn't log anything
-            RunUnhandledExceptionTestAsync().WrapErrors();
+            PrintCurrentThreadContext("Before ConfigureAwait(false)");
+            await RunAwaitSecondsTestAsync().ConfigureAwait(false);
+            PrintCurrentThreadContext("After ConfigureAwait(false)");
+            await new WaitForUpdate();
+            PrintCurrentThreadContext("After WaitForUpdate");
         }
 
-        if (_buttonHandler.Display("Test IEnumerator"))
+        void PrintCurrentThreadContext(string prefix)
         {
-            RunIEnumeratorTestAsync().WrapErrors();
+            Debug.Log(string.Format("{0}: Current Thread: {1}, Scheduler: {2}",
+                prefix, Thread.CurrentThread.ManagedThreadId, SynchronizationContext.Current == null ? "null" : SynchronizationContext.Current.GetType().Name));
         }
 
-        if (_buttonHandler.Display("Test IEnumerator with return value (untyped)"))
+        async Task RunAsyncFromCoroutineTest2()
         {
-            RunIEnumeratorUntypedStringTestAsync().WrapErrors();
+            await new WaitForSeconds(1.0f);
         }
 
-        if (_buttonHandler.Display("Test IEnumerator with return value (typed)"))
+        async Task RunWwwAsync()
         {
-            RunIEnumeratorStringTestAsync().WrapErrors();
+            var bytes = (await new WWW(AssetBundleSampleUrl)).bytes;
+            Debug.Log("Downloaded " + (bytes.Length / 1024) + " kb");
         }
 
-        if (_buttonHandler.Display("Test IEnumerator unhandled exception"))
+        async Task RunOpenNotepadTestAsync()
         {
-            RunIEnumeratorUnhandledExceptionAsync().WrapErrors();
+            Debug.Log("Waiting for user to close notepad...");
+            await Process.Start("notepad.exe");
+            Debug.Log("Closed notepad");
         }
 
-        if (_buttonHandler.Display("Test IEnumerator try-catch exception"))
+        async Task RunUnhandledExceptionTestAsync()
         {
-            RunIEnumeratorTryCatchExceptionAsync().WrapErrors();
+            // This should be logged when using WrapErrors
+            await WaitThenThrowException();
         }
 
-        if (_buttonHandler.Display("Load assetbundle"))
+        async Task RunTryCatchExceptionTestAsync()
         {
-            RunAsyncOperationAsync().WrapErrors();
+            try
+            {
+                await NestedRunAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Caught exception! " + e.Message);
+            }
         }
 
-        if (_buttonHandler.Display("Test UniRx observable"))
+        async Task NestedRunAsync()
         {
-            RunUniRxTestAsync().WrapErrors();
+            await new WaitForSeconds(1);
+            throw new Exception("foo");
         }
 
-        if (_buttonHandler.Display("Trigger UniRx observable"))
+        async Task WaitThenThrowException()
         {
-            _signal.OnNext("zcvd");
+            await new WaitForSeconds(1.5f);
+            throw new Exception("asdf");
         }
 
-        if (_buttonHandler.Display("Test opening notepad"))
+        async Task RunAsyncOperationAsync()
         {
-            RunOpenNotepadTestAsync().WrapErrors();
+            await InstantiateAssetBundleAsync(AssetBundleSampleUrl, AssetBundleSampleAssetName);
         }
 
-        if (_buttonHandler.Display("Test www download"))
+        async Task InstantiateAssetBundleAsync(string abUrl, string assetName)
         {
-            RunWwwAsync().WrapErrors();
+            // We could use WWW here too which might be easier
+            Debug.Log("Downloading asset bundle data...");
+            var assetBundle = await AssetBundle.LoadFromMemoryAsync(
+                await DownloadRawDataAsync(abUrl));
+
+            var prefab = (GameObject)(await assetBundle.LoadAssetAsync<GameObject>(assetName));
+
+            GameObject.Instantiate(prefab);
+            assetBundle.Unload(false);
+            Debug.Log("Asset bundle instantiated");
         }
 
-        if (_buttonHandler.Display("Test Call Async from coroutine"))
+        async Task<byte[]> DownloadRawDataAsync(string url)
         {
-            StartCoroutine(RunAsyncFromCoroutineTest());
+            var request = UnityWebRequest.Get(url);
+            await request.Send();
+            return request.downloadHandler.data;
         }
-    }
 
-    IEnumerator RunAsyncFromCoroutineTest()
-    {
-        Debug.Log("Waiting 1 second...");
-        yield return new WaitForSeconds(1.0f);
-        Debug.Log("Waiting 1 second again...");
-        yield return RunAsyncFromCoroutineTest2().AsIEnumerator();
-        Debug.Log("Done");
-    }
-
-    async Task RunAsyncFromCoroutineTest2()
-    {
-        await new WaitForSeconds(1.0f);
-    }
-
-    async Task RunWwwAsync()
-    {
-        var bytes = (await new WWW(AssetBundleSampleUrl)).bytes;
-        Debug.Log("Downloaded " + (bytes.Length / 1024) + " kb");
-    }
-
-    async Task RunOpenNotepadTestAsync()
-    {
-        Debug.Log("Waiting for user to close notepad...");
-        await Process.Start("notepad.exe");
-        Debug.Log("Closed notepad");
-    }
-
-    async Task RunUnhandledExceptionTestAsync()
-    {
-        // This should be logged when using WrapErrors
-        await WaitThenThrowException();
-    }
-
-    async Task RunTryCatchExceptionTestAsync()
-    {
-        try
+        async Task RunIEnumeratorTryCatchExceptionAsync()
         {
-            await NestedRunAsync();
+            try
+            {
+                await WaitThenThrow();
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Caught exception! " + e.Message);
+            }
         }
-        catch (Exception e)
-        {
-            Debug.Log("Caught exception! " + e.Message);
-        }
-    }
 
-    async Task NestedRunAsync()
-    {
-        await new WaitForSeconds(1);
-        throw new Exception("foo");
-    }
-
-    async Task WaitThenThrowException()
-    {
-        await new WaitForSeconds(1.5f);
-        throw new Exception("asdf");
-    }
-
-    async Task RunAsyncOperationAsync()
-    {
-        await InstantiateAssetBundleAsync(AssetBundleSampleUrl, AssetBundleSampleAssetName);
-    }
-
-    async Task InstantiateAssetBundleAsync(string abUrl, string assetName)
-    {
-        // We could use WWW here too which might be easier
-        Debug.Log("Downloading asset bundle data...");
-        var assetBundle = await AssetBundle.LoadFromMemoryAsync(
-            await DownloadRawDataAsync(abUrl));
-
-        var prefab = (GameObject)(await assetBundle.LoadAssetAsync<GameObject>(assetName));
-
-        GameObject.Instantiate(prefab);
-        assetBundle.Unload(false);
-        Debug.Log("Asset bundle instantiated");
-    }
-
-    async Task<byte[]> DownloadRawDataAsync(string url)
-    {
-        var request = UnityWebRequest.Get(url);
-        await request.Send();
-        return request.downloadHandler.data;
-    }
-
-    async Task RunIEnumeratorTryCatchExceptionAsync()
-    {
-        try
+        async Task RunIEnumeratorUnhandledExceptionAsync()
         {
             await WaitThenThrow();
         }
-        catch (Exception e)
+
+        IEnumerator WaitThenThrow()
         {
-            Debug.Log("Caught exception! " + e.Message);
+            yield return WaitThenThrowNested();
         }
-    }
 
-    async Task RunIEnumeratorUnhandledExceptionAsync()
-    {
-        await WaitThenThrow();
-    }
-
-    IEnumerator WaitThenThrow()
-    {
-        yield return WaitThenThrowNested();
-    }
-
-    IEnumerator WaitThenThrowNested()
-    {
-        Debug.Log("Waiting 1 second...");
-        yield return new WaitForSeconds(1.0f);
-        throw new Exception("zxcv");
-    }
-
-    async Task RunIEnumeratorStringTestAsync()
-    {
-        Debug.Log("Waiting for ienumerator...");
-        Debug.Log("Done! Result: " + await WaitForString());
-    }
-
-    async Task RunIEnumeratorUntypedStringTestAsync()
-    {
-        Debug.Log("Waiting for ienumerator...");
-        string result = (string)(await WaitForStringUntyped());
-        Debug.Log("Done! Result: " + result);
-    }
-
-    async Task RunIEnumeratorTestAsync()
-    {
-        Debug.Log("Waiting for ienumerator...");
-        await WaitABit();
-        Debug.Log("Done!");
-    }
-
-    IEnumerator<string> WaitForString()
-    {
-        var startTime = Time.realtimeSinceStartup;
-        while (Time.realtimeSinceStartup - startTime < 2)
+        IEnumerator WaitThenThrowNested()
         {
-            yield return null;
+            Debug.Log("Waiting 1 second...");
+            yield return new WaitForSeconds(1.0f);
+            throw new Exception("zxcv");
         }
-        yield return "bsdfgas";
-    }
 
-    IEnumerator WaitForStringUntyped()
-    {
-        yield return WaitABit();
-        yield return "qwer";
-    }
+        async Task RunIEnumeratorStringTestAsync()
+        {
+            Debug.Log("Waiting for ienumerator...");
+            Debug.Log("Done! Result: " + await WaitForString());
+        }
 
-    IEnumerator WaitABit()
-    {
-        yield return new WaitForSeconds(1.5f);
-    }
+        async Task RunIEnumeratorUntypedStringTestAsync()
+        {
+            Debug.Log("Waiting for ienumerator...");
+            string result = (string)(await WaitForStringUntyped());
+            Debug.Log("Done! Result: " + result);
+        }
 
-    async Task RunUniRxTestAsync()
-    {
-        Debug.Log("Waiting for UniRx trigger...");
-        var result = await _signal;
-        Debug.Log("Received UniRx trigger with value: " + result);
-    }
+        async Task RunIEnumeratorTestAsync()
+        {
+            Debug.Log("Waiting for ienumerator...");
+            await WaitABit();
+            Debug.Log("Done!");
+        }
 
-    async Task RunReturnValueTestAsync()
-    {
-        Debug.Log("Waiting to get value...");
-        var result = await GetValueExampleAsync();
-        Debug.Log("Got value: " + result);
-    }
+        IEnumerator<string> WaitForString()
+        {
+            var startTime = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - startTime < 2)
+            {
+                yield return null;
+            }
+            yield return "bsdfgas";
+        }
 
-    async Task<string> GetValueExampleAsync()
-    {
-        await new WaitForSeconds(1.0f);
-        return "asdf";
-    }
+        IEnumerator WaitForStringUntyped()
+        {
+            yield return WaitABit();
+            yield return "qwer";
+        }
 
-    async Task RunAwaitSecondsTestAsync()
-    {
-        Debug.Log("Waiting 1 second...");
-        await new WaitForSeconds(1.0f);
-        Debug.Log("Done!");
+        IEnumerator WaitABit()
+        {
+            yield return new WaitForSeconds(1.5f);
+        }
+
+        async Task RunUniRxTestAsync()
+        {
+            Debug.Log("Waiting for UniRx trigger...");
+            var result = await _signal;
+            Debug.Log("Received UniRx trigger with value: " + result);
+        }
+
+        async Task RunReturnValueTestAsync()
+        {
+            Debug.Log("Waiting to get value...");
+            var result = await GetValueExampleAsync();
+            Debug.Log("Got value: " + result);
+        }
+
+        async Task<string> GetValueExampleAsync()
+        {
+            await new WaitForSeconds(1.0f);
+            return "asdf";
+        }
+
+        async Task RunAwaitSecondsTestAsync()
+        {
+            Debug.Log("Waiting 1 second...");
+            await new WaitForSeconds(1.0f);
+            Debug.Log("Done!");
+        }
     }
 }
