@@ -221,16 +221,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1790199439}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d45c777b3c8dbf849bdae06cfbf96211, type: 3}
+  m_Script: {fileID: 11500000, guid: cb4f149e5fdd59e45958e5b591ca42e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _buttonSettings:
-    NumPerColumn: 6
-    VerticalMargin: 50
-    VerticalSpacing: 19.53
-    HorizontalSpacing: 49.02
+    NumPerColumn: 4
+    VerticalMargin: 55.41
+    VerticalSpacing: 62.9
+    HorizontalSpacing: 28.9
     HorizontalMargin: 50
-    ButtonWidth: 288.8
+    ButtonWidth: 342.4
     ButtonHeight: 50
 --- !u!4 &1790199441
 Transform:
