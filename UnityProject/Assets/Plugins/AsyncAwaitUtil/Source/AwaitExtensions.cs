@@ -22,9 +22,9 @@ public static class AwaitExtensions
         return tcs.Task.GetAwaiter();
     }
 
-    // Any time you call an async method from sync code, you should call this method
-    // as well, otherwise any exceptions that occur inside the async code will not be
-    // received by Unity.  (Unity only observes errors for async methods that have return type void)
+    // Any time you call an async method from sync code, you can either use this wrapper
+    // method or you can define your own `async void` method that performs the await
+    // on the given Task
     public static async void WrapErrors(this Task task)
     {
         await task;
