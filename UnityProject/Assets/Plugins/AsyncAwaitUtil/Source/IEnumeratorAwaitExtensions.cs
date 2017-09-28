@@ -60,11 +60,6 @@ public static class IEnumeratorAwaitExtensions
         return awaiter;
     }
 
-    public static SimpleCoroutineAwaiter<UnityEngine.iOS.OnDemandResourcesRequest> GetAwaiter(this UnityEngine.iOS.OnDemandResourcesRequest instruction)
-    {
-        return GetAwaiterReturnSelf(instruction);
-    }
-
     // Return itself so you can do things like (await new WWW(url)).bytes
     public static SimpleCoroutineAwaiter<WWW> GetAwaiter(this WWW instruction)
     {
