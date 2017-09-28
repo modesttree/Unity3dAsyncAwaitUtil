@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityAsyncAwaitUtil;
 
@@ -255,7 +257,23 @@ public static class IEnumeratorAwaitExtensions
                 }
                 catch (Exception e)
                 {
-                    _awaiter.Complete(default(T), e);
+                    // The IEnumerators we have in the process stack do not tell us the
+                    // actual names of the coroutine methods but it does tell us the objects
+                    // that the IEnumerators are associated with, so we can at least try
+                    // adding that to the exception output
+                    var objectTrace = GenerateObjectTrace(_processStack);
+
+                    if (objectTrace.Any())
+                    {
+                        _awaiter.Complete(
+                            default(T), new Exception(
+                                GenerateObjectTraceMessage(objectTrace), e));
+                    }
+                    else
+                    {
+                        _awaiter.Complete(default(T), e);
+                    }
+
                     yield break;
                 }
 
@@ -284,6 +302,58 @@ public static class IEnumeratorAwaitExtensions
                     yield return topWorker.Current;
                 }
             }
+        }
+
+        string GenerateObjectTraceMessage(List<Type> objTrace)
+        {
+            var result = new StringBuilder();
+
+            foreach (var objType in objTrace)
+            {
+                if (result.Length != 0)
+                {
+                    result.Append(" -> ");
+                }
+
+                result.Append(objType.ToString());
+            }
+
+            result.AppendLine();
+            return "Unity Coroutine Object Trace: " + result.ToString();
+        }
+
+        static List<Type> GenerateObjectTrace(IEnumerable<IEnumerator> enumerators)
+        {
+            var objTrace = new List<Type>();
+
+            foreach (var enumerator in enumerators)
+            {
+                // NOTE: This only works with scripting engine 4.6
+                // And could easily stop working with unity updates
+                var field = enumerator.GetType().GetField("$this", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+
+                if (field == null)
+                {
+                    continue;
+                }
+
+                var obj = field.GetValue(enumerator);
+
+                if (obj == null)
+                {
+                    continue;
+                }
+
+                var objType = obj.GetType();
+
+                if (!objTrace.Any() || objType != objTrace.Last())
+                {
+                    objTrace.Add(objType);
+                }
+            }
+
+            objTrace.Reverse();
+            return objTrace;
         }
     }
 
