@@ -87,11 +87,19 @@ public static class IEnumeratorAwaitExtensions
         return awaiter;
     }
 
+    public static SimpleCoroutineAwaiter<T> GetAwaiter<T>(this IEnumerator<T> coroutine)
+    {
+        var awaiter = new SimpleCoroutineAwaiter<T>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            new CoroutineWrapper<T>(coroutine, awaiter).Run()));
+        return awaiter;
+    }
+
     public static SimpleCoroutineAwaiter<object> GetAwaiter(this IEnumerator coroutine)
     {
         var awaiter = new SimpleCoroutineAwaiter<object>();
         RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
-            new CoroutineWrapper(coroutine, awaiter).Run()));
+            new CoroutineWrapper<object>(coroutine, awaiter).Run()));
         return awaiter;
     }
 
@@ -225,13 +233,13 @@ public static class IEnumeratorAwaitExtensions
         }
     }
 
-    class CoroutineWrapper
+    class CoroutineWrapper<T>
     {
-        readonly SimpleCoroutineAwaiter<object> _awaiter;
+        readonly SimpleCoroutineAwaiter<T> _awaiter;
         readonly Stack<IEnumerator> _processStack;
 
         public CoroutineWrapper(
-            IEnumerator coroutine, SimpleCoroutineAwaiter<object> awaiter)
+            IEnumerator coroutine, SimpleCoroutineAwaiter<T> awaiter)
         {
             _processStack = new Stack<IEnumerator>();
             _processStack.Push(coroutine);
@@ -252,7 +260,7 @@ public static class IEnumeratorAwaitExtensions
                 }
                 catch (Exception e)
                 {
-                    _awaiter.Complete(null, e);
+                    _awaiter.Complete(default(T), e);
                     yield break;
                 }
 
@@ -262,7 +270,7 @@ public static class IEnumeratorAwaitExtensions
 
                     if (_processStack.Count == 0)
                     {
-                        _awaiter.Complete(topWorker.Current, null);
+                        _awaiter.Complete((T)topWorker.Current, null);
                         yield break;
                     }
                 }
