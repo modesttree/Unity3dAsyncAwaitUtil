@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.ExceptionServices;
 
 namespace UniRx.Operators
 {
@@ -36,7 +37,7 @@ namespace UniRx.Operators
                 }
             }
 
-            if (ex != null) throw ex;
+            if (ex != null) ExceptionDispatchInfo.Capture(ex).Throw();
             if (!seenValue) throw new InvalidOperationException("No Elements.");
 
             return value;

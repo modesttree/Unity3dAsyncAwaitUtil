@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.ExceptionServices;
 using UniRx.InternalUtil;
 
 namespace UniRx
@@ -23,7 +24,7 @@ namespace UniRx
             get
             {
                 ThrowIfDisposed();
-                if (lastError != null) throw lastError;
+                if (lastError != null) ExceptionDispatchInfo.Capture(lastError).Throw();
                 return lastValue;
             }
         }

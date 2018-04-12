@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using UnityEngine;
@@ -154,7 +155,7 @@ public static class IEnumeratorAwaitExtensions
 
             if (_exception != null)
             {
-                throw _exception;
+                ExceptionDispatchInfo.Capture(_exception).Throw();
             }
 
             return _result;
@@ -202,7 +203,7 @@ public static class IEnumeratorAwaitExtensions
 
             if (_exception != null)
             {
-                throw _exception;
+                ExceptionDispatchInfo.Capture(_exception).Throw();
             }
         }
 
