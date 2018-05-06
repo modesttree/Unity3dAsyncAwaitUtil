@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System;
 
 #pragma warning disable 0659
@@ -270,7 +271,8 @@ namespace UniRx
             /// <summary>
             /// Throws the exception.
             /// </summary>
-            public override T Value { get { throw exception; } }
+			// Note: the 2nd "throw" is never reached:
+            public override T Value { get { ExceptionDispatchInfo.Capture(exception).Throw(); throw null; } }
 
             /// <summary>
             /// Returns the exception.

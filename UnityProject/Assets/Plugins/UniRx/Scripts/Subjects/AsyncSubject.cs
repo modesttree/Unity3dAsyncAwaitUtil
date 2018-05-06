@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using UniRx.InternalUtil;
 
 #if (ENABLE_MONO_BLEEDING_EDGE_EDITOR || ENABLE_MONO_BLEEDING_EDGE_STANDALONE)
@@ -29,7 +30,7 @@ namespace UniRx
             {
                 ThrowIfDisposed();
                 if (!isStopped) throw new InvalidOperationException("AsyncSubject is not completed yet");
-                if (lastError != null) throw lastError;
+                if (lastError != null) ExceptionDispatchInfo.Capture(lastError).Throw();
                 return lastValue;
             }
         }
@@ -315,7 +316,7 @@ namespace UniRx
 
             if (lastError != null)
             {
-                throw lastError;
+                ExceptionDispatchInfo.Capture(lastError).Throw();
             }
 
             if (!hasValue)

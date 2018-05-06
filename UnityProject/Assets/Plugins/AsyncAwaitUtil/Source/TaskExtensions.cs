@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -17,7 +18,7 @@ public static class TaskExtensions
 
         if (task.IsFaulted)
         {
-            throw task.Exception;
+            ExceptionDispatchInfo.Capture(task.Exception).Throw();
         }
     }
 
@@ -31,7 +32,7 @@ public static class TaskExtensions
 
         if (task.IsFaulted)
         {
-            throw task.Exception;
+            ExceptionDispatchInfo.Capture(task.Exception).Throw();
         }
 
         yield return task.Result;
