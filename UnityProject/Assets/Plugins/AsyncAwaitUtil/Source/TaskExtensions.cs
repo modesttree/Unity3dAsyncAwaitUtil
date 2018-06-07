@@ -23,11 +23,10 @@ public static class TaskExtensions
     }
 
     public static IEnumerator<T> AsIEnumerator<T>(this Task<T> task)
-        where T : class
     {
         while (!task.IsCompleted)
         {
-            yield return null;
+            yield return default(T);
         }
 
         if (task.IsFaulted)
