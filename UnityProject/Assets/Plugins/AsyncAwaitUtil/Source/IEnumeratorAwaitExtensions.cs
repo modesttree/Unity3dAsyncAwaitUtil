@@ -55,6 +55,23 @@ public static class IEnumeratorAwaitExtensions
         return GetAwaiterReturnSelf(instruction);
     }
 
+    public static TaskAwaiter<TResult> GetAwaiter<TResult>(this IAsyncOperation<TResult> op)
+    {
+        var tcs = new TaskCompletionSource<TResult>();
+        op.Completed += r =>
+        {
+            if (r.OperationException != null)
+            {
+                tcs.SetException(r.OperationException);
+            }
+            else
+            {
+                tcs.SetResult(r.Result);
+            }
+        };
+        return tcs.Task.GetAwaiter();
+    }
+
     public static SimpleCoroutineAwaiter<UnityEngine.Object> GetAwaiter(this ResourceRequest instruction)
     {
         var awaiter = new SimpleCoroutineAwaiter<UnityEngine.Object>();
