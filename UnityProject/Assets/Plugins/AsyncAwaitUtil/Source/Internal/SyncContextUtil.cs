@@ -15,6 +15,13 @@ namespace UnityAsyncAwaitUtil
         {
             UnitySynchronizationContext = SynchronizationContext.Current;
             UnityThreadId = Thread.CurrentThread.ManagedThreadId;
+
+            IsInstalled = true;
+        }
+
+        public static bool IsInstalled
+        {
+            get; private set;
         }
 
         public static int UnityThreadId

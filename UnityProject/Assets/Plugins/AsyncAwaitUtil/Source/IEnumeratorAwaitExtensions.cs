@@ -58,13 +58,16 @@ public static class IEnumeratorAwaitExtensions
     public static SimpleCoroutineAwaiter<UnityEngine.Object> GetAwaiter(this ResourceRequest instruction)
     {
         var awaiter = new SimpleCoroutineAwaiter<UnityEngine.Object>();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.ResourceRequest(awaiter, instruction)));
         return awaiter;
     }
 
+
+#pragma warning disable CS0618 // Type or member is obsolete
     // Return itself so you can do things like (await new WWW(url)).bytes
     public static SimpleCoroutineAwaiter<WWW> GetAwaiter(this WWW instruction)
+#pragma warning restore CS0618 // Type or member is obsolete
     {
         return GetAwaiterReturnSelf(instruction);
     }
@@ -72,7 +75,7 @@ public static class IEnumeratorAwaitExtensions
     public static SimpleCoroutineAwaiter<AssetBundle> GetAwaiter(this AssetBundleCreateRequest instruction)
     {
         var awaiter = new SimpleCoroutineAwaiter<AssetBundle>();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.AssetBundleCreateRequest(awaiter, instruction)));
         return awaiter;
     }
@@ -80,7 +83,7 @@ public static class IEnumeratorAwaitExtensions
     public static SimpleCoroutineAwaiter<UnityEngine.Object> GetAwaiter(this AssetBundleRequest instruction)
     {
         var awaiter = new SimpleCoroutineAwaiter<UnityEngine.Object>();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.AssetBundleRequest(awaiter, instruction)));
         return awaiter;
     }
@@ -88,7 +91,7 @@ public static class IEnumeratorAwaitExtensions
     public static SimpleCoroutineAwaiter<T> GetAwaiter<T>(this IEnumerator<T> coroutine)
     {
         var awaiter = new SimpleCoroutineAwaiter<T>();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             new CoroutineWrapper<T>(coroutine, awaiter).Run()));
         return awaiter;
     }
@@ -96,7 +99,7 @@ public static class IEnumeratorAwaitExtensions
     public static SimpleCoroutineAwaiter<object> GetAwaiter(this IEnumerator coroutine)
     {
         var awaiter = new SimpleCoroutineAwaiter<object>();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             new CoroutineWrapper<object>(coroutine, awaiter).Run()));
         return awaiter;
     }
@@ -104,7 +107,7 @@ public static class IEnumeratorAwaitExtensions
     static SimpleCoroutineAwaiter GetAwaiterReturnVoid(object instruction)
     {
         var awaiter = new SimpleCoroutineAwaiter();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.ReturnVoid(awaiter, instruction)));
         return awaiter;
     }
@@ -112,23 +115,11 @@ public static class IEnumeratorAwaitExtensions
     static SimpleCoroutineAwaiter<T> GetAwaiterReturnSelf<T>(T instruction)
     {
         var awaiter = new SimpleCoroutineAwaiter<T>();
-        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+        UnityScheduler.Run(() => AsyncCoroutineRunner.Instance.StartCoroutine(
             InstructionWrappers.ReturnSelf(awaiter, instruction)));
         return awaiter;
     }
-
-    static void RunOnUnityScheduler(Action action)
-    {
-        if (SynchronizationContext.Current == SyncContextUtil.UnitySynchronizationContext)
-        {
-            action();
-        }
-        else
-        {
-            SyncContextUtil.UnitySynchronizationContext.Post(_ => action(), null);
-        }
-    }
-
+    
     static void Assert(bool condition)
     {
         if (!condition)
@@ -173,7 +164,7 @@ public static class IEnumeratorAwaitExtensions
             // instructions
             if (_continuation != null)
             {
-                RunOnUnityScheduler(_continuation);
+                UnityScheduler.Run(_continuation);
             }
         }
 
@@ -218,7 +209,7 @@ public static class IEnumeratorAwaitExtensions
             // instructions
             if (_continuation != null)
             {
-                RunOnUnityScheduler(_continuation);
+                UnityScheduler.Run(_continuation);
             }
         }
 
