@@ -100,6 +100,14 @@ public static class IEnumeratorAwaitExtensions
             new CoroutineWrapper<object>(coroutine, awaiter).Run()));
         return awaiter;
     }
+    
+    public static SimpleCoroutineAwaiter<object> GetAwaiter(this Coroutine coroutine)
+    {
+        var awaiter = new SimpleCoroutineAwaiter<object>();
+        RunOnUnityScheduler(() => AsyncCoroutineRunner.Instance.StartCoroutine(
+            new CoroutineWrapper<object>(InstructionWrappers.WrapCoroutine(coroutine), awaiter).Run()));
+        return awaiter;
+    }
 
     static SimpleCoroutineAwaiter GetAwaiterReturnVoid(object instruction)
     {
@@ -394,6 +402,11 @@ public static class IEnumeratorAwaitExtensions
         {
             yield return instruction;
             awaiter.Complete(instruction.asset, null);
+        }
+        
+        internal static IEnumerator WrapCoroutine(Coroutine coroutine)
+        {
+            yield return coroutine;
         }
     }
 }
