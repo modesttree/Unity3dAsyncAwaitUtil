@@ -64,6 +64,7 @@ public static class IEnumeratorAwaitExtensions
     }
 
     // Return itself so you can do things like (await new WWW(url)).bytes
+    [Obsolete]
     public static SimpleCoroutineAwaiter<WWW> GetAwaiter(this WWW instruction)
     {
         return GetAwaiterReturnSelf(instruction);
