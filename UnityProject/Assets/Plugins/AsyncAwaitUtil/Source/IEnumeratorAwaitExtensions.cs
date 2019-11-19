@@ -289,11 +289,20 @@ public static class IEnumeratorAwaitExtensions
                     }
                 }
 
-                // We could just yield return nested IEnumerator's here but we choose to do
-                // our own handling here so that we can catch exceptions in nested coroutines
-                // instead of just top level coroutine
-                if (topWorker.Current is IEnumerator)
+                if (!Application.isPlaying
+                    && topWorker.Current is WaitForSecondsRealtime)
                 {
+                    // Return `WaitForSecondsRealtime` to
+                    // `EditModeCoroutineRunner` since its
+                    // `IEnumerator` behaviour doesn't work
+                    // correctly in Edit Mode
+                    yield return topWorker.Current;
+                }
+                else if (topWorker.Current is IEnumerator)
+                {
+                    // We could just yield return nested IEnumerator's here but we choose to do
+                    // our own handling here so that we can catch exceptions in nested coroutines
+                    // instead of just top level coroutine
                     _processStack.Push((IEnumerator)topWorker.Current);
                 }
                 else

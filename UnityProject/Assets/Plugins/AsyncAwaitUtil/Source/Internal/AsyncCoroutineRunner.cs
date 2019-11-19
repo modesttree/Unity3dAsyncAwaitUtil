@@ -6,30 +6,26 @@ using UnityEngine;
 
 namespace UnityAsyncAwaitUtil
 {
+    public interface ICoroutineRunner
+    {
+        void StartCoroutine(IEnumerator coroutine);
+    }
+
     public class AsyncCoroutineRunner : MonoBehaviour
     {
-        static AsyncCoroutineRunner _instance;
-
-        public static AsyncCoroutineRunner Instance
+        public static ICoroutineRunner Instance
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = new GameObject("AsyncCoroutineRunner")
-                        .AddComponent<AsyncCoroutineRunner>();
-                }
-
-                return _instance;
+#if UNITY_EDITOR
+                if (Application.isPlaying)
+                    return PlayModeCoroutineRunner.Instance;
+                else
+                    return EditModeCoroutineRunner.Instance;
+#else
+                return PlayModeCoroutineRunner.Instance;
+#endif
             }
-        }
-
-        void Awake()
-        {
-            // Don't show in scene hierarchy
-            gameObject.hideFlags = HideFlags.HideAndDontSave;
-
-            DontDestroyOnLoad(gameObject);
         }
     }
 }
