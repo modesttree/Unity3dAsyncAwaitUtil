@@ -17,10 +17,14 @@ namespace UnityAsyncAwaitUtil
         {
             get
             {
+#if UNITY_EDITOR
                 if (Application.isPlaying)
                     return PlayModeCoroutineRunner.Instance;
                 else
                     return EditModeCoroutineRunner.Instance;
+#else
+                return PlayModeCoroutineRunner.Instance;
+#endif
             }
         }
     }
