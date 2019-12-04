@@ -1,0 +1,20 @@
+{
+    "name": "AsyncAwaitUtil",
+    "references": [
+        "GUID:478a2357cc57436488a56e564b08d223"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.editorcoroutines",
+            "expression": "0.0.2-preview",
+            "define": "HAVE_EDITOR_COROUTINES"
+        }
+    ]
+}

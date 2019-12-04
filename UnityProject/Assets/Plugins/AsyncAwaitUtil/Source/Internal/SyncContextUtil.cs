@@ -10,6 +10,9 @@ namespace UnityAsyncAwaitUtil
 {
     public static class SyncContextUtil
     {
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+#endif
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Install()
         {
